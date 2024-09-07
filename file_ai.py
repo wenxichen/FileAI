@@ -31,10 +31,12 @@ import os
 
 def get_all_files(start_path):
     file_list = []
+    error_count = 0
     for root, dirs, files in os.walk(start_path):
         for file in files:
             file_path = os.path.join(root, file)
-            file_list.append({
+            try:
+                file_info = {
                 'name': file,
                 'path': file_path,
                 'is_file': os.path.isfile(file_path),
@@ -42,8 +44,13 @@ def get_all_files(start_path):
                 'size': os.path.getsize(file_path),
                 'modified': datetime.datetime.fromtimestamp(os.path.getmtime(file_path)),
                 'created': datetime.datetime.fromtimestamp(os.path.getctime(file_path)),
-                'accessed': datetime.datetime.fromtimestamp(os.path.getatime(file_path))
-            })
+                'accessed': datetime.datetime.fromtimestamp(os.path.getatime(file_path)) }
+                file_list.append(file_info)
+            except (OSError, PermissionError) as e:
+                error_count += 1
+                print(f"Error accessing file: {file_path}")
+                print(f"Error message: {str(e)}")
+    
     return file_list
 
 if __name__ == "__main__":
@@ -55,11 +62,12 @@ if __name__ == "__main__":
      # Start the timer
     start_time = time.time()
     
-    all_files = get_all_files(start_directory)
+    all_files, errors = get_all_files(start_directory)
     
     elapsed_time = time.time() - start_time
     
     print(f"Total files found: {len(all_files)}")
+    print(f"Total files that could not be accessed: {errors}")
     print(f"Time taken: {elapsed_time:.2f} seconds")
     
     # Print the first 10 files as an example
