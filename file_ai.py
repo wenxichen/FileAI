@@ -51,7 +51,7 @@ def get_all_files(start_path):
                 print(f"Error accessing file: {file_path}")
                 print(f"Error message: {str(e)}")
     
-    return file_list
+    return file_list, error_count
 
 if __name__ == "__main__":
     # Replace 'C:\\' with the drive or directory you want to start from
