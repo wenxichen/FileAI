@@ -1,5 +1,6 @@
 import os
 import datetime
+import time
 
 # find all files and directories and their basic information in the current Windows directory
 def list_files():
@@ -41,9 +42,16 @@ if __name__ == "__main__":
     start_directory = 'C:\\'
     
     print(f"Scanning for files in {start_directory}")
+    
+     # Start the timer
+    start_time = time.time()
+    
     all_files = get_all_files(start_directory)
     
+    elapsed_time = time.time() - start_time
+    
     print(f"Total files found: {len(all_files)}")
+    print(f"Time taken: {elapsed_time:.2f} seconds")
     
     # Print the first 10 files as an example
     print("First 10 files:")
