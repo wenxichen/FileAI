@@ -3,7 +3,7 @@ import datetime
 import time
 
 # find all files and directories and their basic information in the current Windows directory
-def list_files():
+def list_files_in_current_directory():
     """Returns a list of all files and directories in the current Windows directory along with their basic information."""
     if not os.path.exists('.'):
         raise FileNotFoundError('The current directory does not exist.')
@@ -34,7 +34,16 @@ def get_all_files(start_path):
     for root, dirs, files in os.walk(start_path):
         for file in files:
             file_path = os.path.join(root, file)
-            file_list.append(file_path)
+            file_list.append({
+                'name': file,
+                'path': file_path,
+                'is_file': os.path.isfile(file_path),
+                'is_dir': os.path.isdir(file_path),
+                'size': os.path.getsize(file_path),
+                'modified': datetime.datetime.fromtimestamp(os.path.getmtime(file_path)),
+                'created': datetime.datetime.fromtimestamp(os.path.getctime(file_path)),
+                'accessed': datetime.datetime.fromtimestamp(os.path.getatime(file_path))
+            })
     return file_list
 
 if __name__ == "__main__":
