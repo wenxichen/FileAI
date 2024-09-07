@@ -55,7 +55,7 @@ def get_all_files(start_path):
 
 if __name__ == "__main__":
     # Replace 'C:\\' with the drive or directory you want to start from
-    start_directory = 'C:\\'
+    start_directory = '/Users/wchen/projects'
     
     print(f"Scanning for files in {start_directory}")
     
