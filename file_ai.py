@@ -4,6 +4,7 @@ import time
 import requests
 import json
 from pathlib import Path
+from move import move_files
 
 # find all files and directories and their basic information in the current Windows directory
 def list_files_in_current_directory():
@@ -158,6 +159,7 @@ def process_move_json(json_output, start_directory):
     original_folder = os.path.join(start_directory, move_input['original_folder'])
     output_folder = os.path.join(start_directory, move_input['output_folder'])
 
+    move_files(original_folder, output_folder)
     print(f"Moving files from {original_folder} to {output_folder}")
     # Uncomment the following line when you're ready to actually move files
     # move_files(original_folder, output_folder)
