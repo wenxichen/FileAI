@@ -164,22 +164,51 @@ def process_move_json(json_output, start_directory):
     # Uncomment the following line when you're ready to actually move files
     # move_files(original_folder, output_folder)
 
+def get_string_has_substring(string, substring):
+    if substring.lower() in string. lower():
+        return True
+    else:
+        return False
+
 if __name__ == "__main__":
-    home_directory = str(Path.home())
-    start_directory = os.path.join(home_directory, 'Desktop')
-    
+
+    start_directory = os.getcwd()
+ 
     print(f"Scanning for files in {start_directory}")
+ 
+     # Start the timer
+    start_time = time.time()
+ 
+    all_files, errors = get_all_files(start_directory)
+ 
+    elapsed_time = time.time() - start_time
+ 
+    print(f"Total files found: {len(all_files)}")
+    print(f"Total files that could not be accessed: {errors}")
+    print(f"Time taken: {elapsed_time:.2f} seconds")
+    # home_directory = str(Path.home())
+    # start_directory = os.path.join(home_directory, 'Desktop')
 
     user_input = input("Enter your request: ")
 
-    action_data = check_user_request_action(user_input)
-    print("\nFull response:")
-    print(json.dumps(action_data, indent=2))
+    action_resp = check_user_request_action(user_input)
+    action = action_resp["action"]
+    if action is not None:
+        print(f"Your action is to {action}")
+        full_resp = get_full_response()
+        print("Full response:", json.dumps(full_resp, indent=2))
+        if action == "find":
+            substring = full_resp["input"]["substring"]
+            print(f"Substring: {substring}")
+            for file in all_files[:1000]:
+                # print(file)
+                if get_string_has_substring(file["name"], substring):
+                    print(file)
 
-    if action_data["action"] == "find":
-        search_term = action_data["input"]["substring"]
-        print(f"Searching for files containing: {search_term}")
-    elif action_data["action"] == "move":
-        process_move_json(action_data, start_directory)
+        elif action == "move":
+            process_move_json(action_resp, start_directory)
     else:
-        print("Action not recognized. Please try rephrasing your request.")
+        print("Unable to determine the action. Please try rephrasing your request.")
+
+
+

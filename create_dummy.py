@@ -53,19 +53,11 @@ def create_folders_and_files(start_directory):
 
 if __name__ == "__main__":
     # Get the home directory of the current user
-    home_directory = str(Path.home())
+    # home_directory = str(Path.home())
+    home_directory = os.getcwd()
     desktop_directory = os.path.join(home_directory, 'Desktop')
     print(f"User's Desktop directory: {desktop_directory}")
     
-    start_directory = desktop_directory
+    start_directory = home_directory
     print(f"Creating folders and files in {start_directory}")
     create_folders_and_files(start_directory)
-
-"""
-Path.home():
-   - This function from the pathlib module returns a Path object representing the user's home directory.
-   - It uses platform-specific logic to determine the home directory:
-     - On Windows, it typically returns 'C:\Users\<username>'
-     - On macOS and Linux, it typically returns '/home/<username>'
-
-"""
