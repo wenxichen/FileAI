@@ -149,6 +149,19 @@ def get_full_response():
     global full_response
     return full_response
 
+def process_move_json(json_output, start_directory):
+    if json_output['action'] != 'move':
+        print("Error: The provided JSON is not for a move action.")
+        return
+
+    move_input = json_output['input'][0]
+    original_folder = os.path.join(start_directory, move_input['original_folder'])
+    output_folder = os.path.join(start_directory, move_input['output_folder'])
+
+    print(f"Moving files from {original_folder} to {output_folder}")
+    # Uncomment the following line when you're ready to actually move files
+    # move_files(original_folder, output_folder)
+
 if __name__ == "__main__":
     home_directory = str(Path.home())
     start_directory = os.path.join(home_directory, 'Desktop')
@@ -158,18 +171,13 @@ if __name__ == "__main__":
     user_input = input("Enter your request: ")
 
     action_data = check_user_request_action(user_input)
-    if action_data is not None:
-        action = action_data["action"]
-        print(f"Your action is to {action}")
-        if action == "find":
-            search_term = action_data["input"]["substring"]
-            print(f"Searching for files containing: {search_term}")
-        elif action == "move":
-            move_info = action_data["input"][0]
-            print(f"Moving files from {move_info['original_folder']} to {move_info['output_folder']}")
-            if move_info['move_condition']:
-                print(f"Move condition: {move_info['move_condition']}")
-        print("\nFull response:")
-        print(json.dumps(action_data, indent=2))
+    print("\nFull response:")
+    print(json.dumps(action_data, indent=2))
+
+    if action_data["action"] == "find":
+        search_term = action_data["input"]["substring"]
+        print(f"Searching for files containing: {search_term}")
+    elif action_data["action"] == "move":
+        process_move_json(action_data, start_directory)
     else:
-        print("Unable to determine the action. Please try rephrasing your request.")
+        print("Action not recognized. Please try rephrasing your request.")
