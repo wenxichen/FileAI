@@ -1,6 +1,25 @@
 import os
+from pathlib import Path
 
 def create_folders_and_files(start_directory):
+    """
+    Create two folders ('x' and 'y') in the specified directory and populate 'x' with text files.
+
+    This function creates a folder named 'x' and an empty folder named 'y' in the given directory.
+    It then creates 10 text files named 'cat_01.txt' to 'cat_10.txt' inside the 'x' folder,
+    each containing the text 'cat' followed by its filename.
+
+    Args:
+        start_directory (str): The directory where the folders and files will be created.
+
+    Raises:
+        FileNotFoundError: If the specified start_directory does not exist.
+        PermissionError: If there's no permission to create folders in the start_directory.
+        Exception: For any other unexpected errors during folder/file creation.
+
+    Returns:
+        None
+    """
     try:
         # Ensure the start directory exists
         if not os.path.exists(start_directory):
@@ -24,7 +43,7 @@ def create_folders_and_files(start_directory):
         os.makedirs(folder_y, exist_ok=True)
         
         print(f"Created folder '{folder_x}' with 10 cat files in {start_directory}.")
-        print(f"Created empty folder '{folder_y} in {start_directory}.")
+        print(f"Created empty folder '{folder_y}' in {start_directory}.")
         print(f"Folders and files created successfully in {start_directory}")
 
     except PermissionError:
@@ -33,6 +52,20 @@ def create_folders_and_files(start_directory):
         print(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    start_directory = '/Users/lilysu/Desktop'
+    # Get the home directory of the current user
+    home_directory = str(Path.home())
+    desktop_directory = os.path.join(home_directory, 'Desktop')
+    print(f"User's Desktop directory: {desktop_directory}")
+    
+    start_directory = desktop_directory
     print(f"Creating folders and files in {start_directory}")
     create_folders_and_files(start_directory)
+
+"""
+Path.home():
+   - This function from the pathlib module returns a Path object representing the user's home directory.
+   - It uses platform-specific logic to determine the home directory:
+     - On Windows, it typically returns 'C:\Users\<username>'
+     - On macOS and Linux, it typically returns '/home/<username>'
+
+"""
