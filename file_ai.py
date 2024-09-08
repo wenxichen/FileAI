@@ -1,6 +1,9 @@
 import os
 import datetime
 import time
+import requests
+import json
+from pathlib import Path
 
 # find all files and directories and their basic information in the current Windows directory
 def list_files_in_current_directory():
@@ -53,25 +56,115 @@ def get_all_files(start_path):
     
     return file_list, error_count
 
+
+def make_llm_completion_call(prompt):
+    url = "http://192.168.3.7:8080/completion"
+    response = requests.post(url, json={'prompt': prompt})
+    response.raise_for_status()
+    return response.json()['content']
+
+def make_llm_completion_call_return_json(prompt):
+    url = "http://192.168.3.7:8080/completion"
+    response = requests.post(url, json={'prompt': prompt + "\n```json ", "stop": ["```"]})
+    response.raise_for_status()
+    return response.json()['content']
+
+# def check_user_request_action(input):
+#     prompt =  "You are a file manager on a PC.\nThe user request: \"" + \
+#         input + "\nIs the user trying to find or move files? Please only return a JSON object that has a key \"action\" and a value being one of the three actions - \"move\", \"find\" and \"other\". Here's an example JSON response: {\"action\" : \"find\"}. No explaination."
+#     resp = make_llm_completion_call_return_json(prompt)
+#     print(resp)
+#     # check if resp is valid json
+#     try:
+#         resp = json.loads(resp)
+#     except json.JSONDecodeError:
+#         return 
+#     if "action" in resp and resp["action"] in ["find", "move", "other"]:
+#         return resp["action"]
+#     else:
+#         return
+
+def check_user_request_action(input):
+    prompt = f"""You are a file manager on a PC.
+    The user request: "{input}"
+
+    Analyze the user's request and determine if they are trying to find or move files. 
+    If the action is "find", look for a search term.
+    If the action is "move", identify the original folder, output folder, and any move conditions.
+
+    Return a JSON object with the following structure:
+
+    For "find" action:
+    {{
+        "action": "find",
+        "input": {{
+            "substring": "<search_term>"
+        }}
+    }}
+
+    For "move" action:
+    {{
+        "action": "move",
+        "input": [
+            {{
+                "original_folder": "<original_folder>",
+                "output_folder": "<output_folder>",
+                "move_condition": "<move_condition>"
+            }}
+        ]
+    }}
+
+    For any other action:
+    {{
+        "action": "other"
+    }}
+
+    If no search term is found for "find" action, use null or an empty string for "substring".
+    If any information is missing for "move" action, use empty strings for the missing fields.
+
+    Please return only the JSON object without any additional explanation."""
+
+    resp = make_llm_completion_call_return_json(prompt)
+    if resp is None:
+        print("Error: Unable to get a valid response from LLM after multiple attempts")
+        return None
+
+    print("Raw LLM response:", resp)
+    
+    try:
+        resp_json = json.loads(resp)
+    except json.JSONDecodeError:
+        print("Error: Invalid JSON response from LLM")
+        return None
+    
+    if "action" in resp_json and resp_json["action"] in ["find", "move", "other"]:
+        global full_response
+        full_response = resp_json
+        return resp_json["action"]
+    else:
+        print("Error: Invalid action in LLM response")
+        return None
+
+def get_full_response():
+    global full_response
+    return full_response
+
+def get_user_input():
+        user_input = input("Enter your request: ")
+        return user_input
+
 if __name__ == "__main__":
-    start_directory = os.getcwd()
+    home_directory = str(Path.home())
+    start_directory = os.path.join(home_directory, 'Desktop')
     
     print(f"Scanning for files in {start_directory}")
-    
-     # Start the timer
-    start_time = time.time()
-    
-    all_files, errors = get_all_files(start_directory)
-    
-    elapsed_time = time.time() - start_time
-    
-    print(f"Total files found: {len(all_files)}")
-    print(f"Total files that could not be accessed: {errors}")
-    print(f"Time taken: {elapsed_time:.2f} seconds")
-    
-    # Print the first 10 files as an example
-    print("First 10 files:")
-    for file in all_files[:10]:
-        print(file)
 
-    # print(list_files())
+    user_input = input("Enter your request: ")
+
+    action = check_user_request_action(user_input)
+    if action is not None:
+        print(f"Your action is to {action}")
+        full_resp = get_full_response()
+        print("Full response:", json.dumps(full_resp, indent=2))
+    else:
+        print("Unable to determine the action. Please try rephrasing your request.")
