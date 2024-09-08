@@ -68,20 +68,83 @@ def make_llm_completion_call_return_json(prompt):
     response.raise_for_status()
     return response.json()['content']
 
-def check_user_request_action(input):
-    prompt =  "You are a file manager on a PC.\nThe user request: \"" + \
-        input + "\nIs the user trying to find or move files? Please only return a JSON object that has a key \"action\" and a value being one of the three actions - \"move\", \"find\" and \"other\". Here's an example JSON response: {\"action\" : \"find\"}. No explaination."
+# def check_user_request_action(input):
+#     prompt =  "You are a file manager on a PC.\nThe user request: \"" + \
+#         input + "\nIs the user trying to find or move files? Please only return a JSON object that has a key \"action\" and a value being one of the three actions - \"move\", \"find\" and \"other\". Here's an example JSON response: {\"action\" : \"find\"}. No explaination."
+#     resp = make_llm_completion_call_return_json(prompt)
+#     print(resp)
+#     # check if resp is valid json
+#     try:
+#         resp = json.loads(resp)
+#     except json.JSONDecodeError:
+#         return 
+#     if "action" in resp and resp["action"] in ["find", "move", "other"]:
+#         return resp["action"]
+#     else:
+#         return
+    
+
+    
+def find_with_llm(user_input, context):
+    find_prompt = "Please find files based on the user's request: \"" + user_input + "\". Please only return a JSON object that has a key \"files\" and the value should be an array of files. Here's an example JSON response: {\"files\" : [{\"name\":\"dog_1.txt\", \"path\":\"'/Users/wchen/dog_1.txt\"}, {\"name\":\"dog_2.txt\", \"path\":\"/Users/wchen/dog_2.txt\"}]}. No explaination."
+    prompt = f"{context}\n\n{find_prompt}"
     resp = make_llm_completion_call_return_json(prompt)
-    print(resp)
-    # check if resp is valid json
     try:
         resp = json.loads(resp)
     except json.JSONDecodeError:
         return 
-    if "action" in resp and resp["action"] in ["find", "move", "other"]:
-        return resp["action"]
+    if "files" in resp:
+        print("AI: ")
+        for file in resp["files"]:
+            print(file)
     else:
         return
+
+
+def move_with_llm(user_input, context):
+    find_where_to_move_to_prompt = "Please find the folder the user wants to move to based on the user's request: \"" + user_input + "\". Please only return a JSON object that has a key \"folder_path\" and the value should be the path to the folder. Here's an example JSON response: {\"folder_path\" : \"/Users/wchen/a/\"}. No explaination."
+    prompt = f"{context}\n\n{find_where_to_move_to_prompt}"
+    resp = make_llm_completion_call_return_json(prompt)
+    try:
+        resp = json.loads(resp)
+    except json.JSONDecodeError:
+        return 
+    if "files" in resp:
+        print("AI: ")
+        for file in resp["files"]:
+            print(file)
+    else:
+        return
+
+def chat_with_llm(initial_context):
+    print("\nStarting chat with LLM. Type 'exit' to end the conversation.")
+    context = initial_context
+ 
+    while True:
+        user_input = input("\nYou: ")
+        if user_input.lower() == 'exit':
+            break
+ 
+        # user_input = f"{context}\n\nHuman: {user_input}\nAI:"
+        action = check_user_request_action(user_input)
+        
+        if action == "find":
+            print("Your action is to " + action + " files.")
+            find_with_llm(user_input, context)
+        elif action == "move":
+            print("Your action is to " + action + " files.")
+            pass
+        else:
+            print(f"\nAI: Sorry I am not able to help with this.")
+        # if llm_response:
+        #     response_content = llm_response.get('content', 'No content in response')
+        #     print(f"\nAI: {response_content}")
+        #     context += f"\nHuman: {user_input}\nAI: {response_content}"
+        # else:
+        #     print("\nFailed to get a response from the LLM.")
+    print("Chat ended.")
+
+
 
 def get_user_input():
         user_input = input("Enter your request: ")
@@ -89,12 +152,45 @@ def get_user_input():
 
 if __name__ == "__main__":
     start_directory = os.getcwd()
-    
+ 
     print(f"Scanning for files in {start_directory}")
+ 
+     # Start the timer
+    start_time = time.time()
+ 
+    all_files, errors = get_all_files(start_directory)
+ 
+    elapsed_time = time.time() - start_time
+ 
+    print(f"Total files found: {len(all_files)}")
+    print(f"Total files that could not be accessed: {errors}")
+    print(f"Time taken: {elapsed_time:.2f} seconds")
+ 
+    # # Print the first 10 files as an example
+    # print("First 10 files:")
+    # for file in all_files[:10]:
+    #     print(file)
+ 
+    # Combine information of all files into a single string
+    all_files_info = "\n".join([
+        f"Name: {file['name']}, "
+        f"Path: {file['path']}, "
+        f"Size: {file['size']} bytes, "
+        f"Modified: {file['modified']}"
+        for file in all_files[:100]  # Limit to first 100 files to avoid token limit issues
+    ])
+ 
+    # Create initial context for the chat
+    initial_context = f"""I have scanned {len(all_files)} files in {elapsed_time:.2f} seconds. 
+Here are details of up to 100 files:
+ 
+{all_files_info}
+ 
+You are an AI assistant helping to analyze this file system information."""
 
-    user_input = get_user_input()
+    chat_with_llm(initial_context)
 
-    print("Your action is to " + check_user_request_action(user_input))
+    # print("Your action is to " + check_user_request_action(user_input))
 
     #  # Start the timer
     # start_time = time.time()
