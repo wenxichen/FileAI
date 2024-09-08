@@ -69,30 +69,17 @@ def make_llm_completion_call_return_json(prompt):
     response.raise_for_status()
     return response.json()['content']
 
-# def check_user_request_action(input):
-#     prompt =  "You are a file manager on a PC.\nThe user request: \"" + \
-#         input + "\nIs the user trying to find or move files? Please only return a JSON object that has a key \"action\" and a value being one of the three actions - \"move\", \"find\" and \"other\". Here's an example JSON response: {\"action\" : \"find\"}. No explaination."
-#     resp = make_llm_completion_call_return_json(prompt)
-#     print(resp)
-#     # check if resp is valid json
-#     try:
-#         resp = json.loads(resp)
-#     except json.JSONDecodeError:
-#         return 
-#     if "action" in resp and resp["action"] in ["find", "move", "other"]:
-#         return resp["action"]
-#     else:
-#         return
 
 def check_user_request_action(input):
-    prompt = f"""You are a file manager on a PC.
-    The user request: "{input}"
+    prompt = f"""You are an AI assistant functioning as a file manager on a PC. Your task is to analyze the user's request and return a JSON object representing the action to be taken. Follow these steps:
 
-    Analyze the user's request and determine if they are trying to find or move files. 
-    If the action is "find", look for a search term.
-    If the action is "move", identify the original folder, output folder, and any move conditions.
+    1. Determine the action: Is the user trying to find files or move files?
+    2. Extract relevant information based on the action.
+    3. Construct the JSON response according to the specified format.
 
-    Return a JSON object with the following structure:
+    User request: "{input}"
+
+    Response format:
 
     For "find" action:
     {{
@@ -107,9 +94,9 @@ def check_user_request_action(input):
         "action": "move",
         "input": [
             {{
-                "original_folder": "<original_folder>",
-                "output_folder": "<output_folder>",
-                "move_condition": "<move_condition>"
+                "original_folder": "<source_folder>",
+                "output_folder": "<destination_folder>",
+                "move_condition": "<condition_if_any>"
             }}
         ]
     }}
@@ -119,10 +106,23 @@ def check_user_request_action(input):
         "action": "other"
     }}
 
-    If no search term is found for "find" action, use null or an empty string for "substring".
-    If any information is missing for "move" action, use empty strings for the missing fields.
+    Rules:
+    1. Always return a valid JSON object.
+    2. Use "find" for searching or locating files.
+    3. Use "move" for moving, copying, or transferring files.
+    4. Use "other" if the action is neither find nor move.
+    5. For "find", if no search term is found, use null for "substring".
+    6. For "move", if any information is missing, use empty strings.
+    7. Do not include any explanation or text outside the JSON object.
 
-    Please return only the JSON object without any additional explanation."""
+    Example responses:
+    For "find my documents with 'report' in the name":
+    {{"action": "find", "input": {{"substring": "report"}}}}
+
+    For "move files from folder_a to folder_b":
+    {{"action": "move", "input": [{{"original_folder": "folder_a", "output_folder": "folder_b", "move_condition": ""}}]}}
+
+    Now, analyze the user's request and provide the appropriate JSON response:"""
 
     resp = make_llm_completion_call_return_json(prompt)
     if resp is None:
@@ -140,7 +140,7 @@ def check_user_request_action(input):
     if "action" in resp_json and resp_json["action"] in ["find", "move", "other"]:
         global full_response
         full_response = resp_json
-        return resp_json["action"]
+        return resp_json
     else:
         print("Error: Invalid action in LLM response")
         return None
@@ -148,10 +148,6 @@ def check_user_request_action(input):
 def get_full_response():
     global full_response
     return full_response
-
-def get_user_input():
-        user_input = input("Enter your request: ")
-        return user_input
 
 if __name__ == "__main__":
     home_directory = str(Path.home())
@@ -161,10 +157,19 @@ if __name__ == "__main__":
 
     user_input = input("Enter your request: ")
 
-    action = check_user_request_action(user_input)
-    if action is not None:
+    action_data = check_user_request_action(user_input)
+    if action_data is not None:
+        action = action_data["action"]
         print(f"Your action is to {action}")
-        full_resp = get_full_response()
-        print("Full response:", json.dumps(full_resp, indent=2))
+        if action == "find":
+            search_term = action_data["input"]["substring"]
+            print(f"Searching for files containing: {search_term}")
+        elif action == "move":
+            move_info = action_data["input"][0]
+            print(f"Moving files from {move_info['original_folder']} to {move_info['output_folder']}")
+            if move_info['move_condition']:
+                print(f"Move condition: {move_info['move_condition']}")
+        print("\nFull response:")
+        print(json.dumps(action_data, indent=2))
     else:
         print("Unable to determine the action. Please try rephrasing your request.")
