@@ -1,6 +1,8 @@
 import os
 import datetime
 import time
+import requests
+import json
 
 # find all files and directories and their basic information in the current Windows directory
 def list_files_in_current_directory():
@@ -53,25 +55,68 @@ def get_all_files(start_path):
     
     return file_list, error_count
 
+
+def make_llm_completion_call(prompt):
+    url = "http://192.168.3.7:8080/completion"
+    response = requests.post(url, json={'prompt': prompt})
+    response.raise_for_status()
+    return response.json()['content']
+
+def make_llm_completion_call_return_json(prompt):
+    url = "http://192.168.3.7:8080/completion"
+    response = requests.post(url, json={'prompt': prompt + "\n```json ", "stop": ["```"]})
+    response.raise_for_status()
+    return response.json()['content']
+
+def check_user_request_action(input):
+    prompt =  "You are a file manager on a PC.\nThe user request: \"" + \
+        input + "\nIs the user trying to find or move files? Please only return a JSON object that has a key \"action\" and a value being one of the three actions - \"move\", \"find\" and \"other\". Here's an example JSON response: {\"action\" : \"find\"}. No explaination."
+    resp = make_llm_completion_call_return_json(prompt)
+    print(resp)
+    # check if resp is valid json
+    try:
+        resp = json.loads(resp)
+    except json.JSONDecodeError:
+        return 
+    if "action" in resp and resp["action"] in ["find", "move", "other"]:
+        return resp["action"]
+    else:
+        return
+
+def get_user_input():
+        user_input = input("Enter your request: ")
+        return user_input
+
 if __name__ == "__main__":
     start_directory = os.getcwd()
     
     print(f"Scanning for files in {start_directory}")
+
+    user_input = get_user_input()
+
+    print("Your action is to " + check_user_request_action(user_input))
+
+    #  # Start the timer
+    # start_time = time.time()
     
-     # Start the timer
-    start_time = time.time()
+    # all_files, errors = get_all_files(start_directory)
     
-    all_files, errors = get_all_files(start_directory)
+    # elapsed_time = time.time() - start_time
     
-    elapsed_time = time.time() - start_time
+    # print(f"Total files found: {len(all_files)}")
+    # print(f"Total files that could not be accessed: {errors}")
+    # print(f"Time taken: {elapsed_time:.2f} seconds")
     
-    print(f"Total files found: {len(all_files)}")
-    print(f"Total files that could not be accessed: {errors}")
-    print(f"Time taken: {elapsed_time:.2f} seconds")
-    
-    # Print the first 10 files as an example
-    print("First 10 files:")
-    for file in all_files[:10]:
-        print(file)
+    # # Print the first 10 files as an example
+    # # print("First 10 files:")
+    # # for file in all_files[:10]:
+    # #     print(file)
+
+    # prompt = "You are a file manager. \nGiven the files information below \n\n\"\"\"\n" + str(all_files[:100]) + "\n\"\"\"\n\n" \
+    #     + "Base on the file information above, what are files with \"cat\" in it's name?"
+
+    # print(prompt)
+
+    # print(make_llm_completion_call(prompt))
 
     # print(list_files())
