@@ -33,6 +33,6 @@ def create_folders_and_files(start_directory):
         print(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    start_directory = '/Users/lilysu/Desktop'
+    start_directory = os.getcwd()
     print(f"Creating folders and files in {start_directory}")
     create_folders_and_files(start_directory)
